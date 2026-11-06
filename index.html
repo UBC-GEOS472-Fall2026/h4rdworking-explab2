@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset="utf-8" />
+    <title>Exploratory Lab 2: Food Near Me</title>
+
+    <!-- Load MapLibre's stylesheet (CSS). Its code (JavaScript) is loaded below, in the script. -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/maplibre-gl@6.15.0/dist/maplibre-gl.css"
+    />
+    <!-- Load Turf's code (JavaScript). After this line, the code on the page can use the name turf. -->
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7.4.0/turf.min.js"></script>
+  </head>
+  
+  <body>
+    <!-- The web map will go in this div element. -->
+    <div id="mapid" style="width: 700px; height: 500px;"></div>
+
+      <div id="controls" style="margin: 15px;">
+      <button id="showAllShopsButton">Show All Shops</button>
+
+      <span style="display: inline-block; width: 150px;"></span>
+      <input type="text" id="highlightShopsTextEntry" placeholder="Name of storefront: e.g. Persia Foods, Subway, Safeway"> 
+      <button id="highlightShopsButton">Highlight</button>
+    </div>
+    
+    <p>Type a distance in metres, then click the map: <input id="distanceInput" type="number" value="200"></p>
+    
+    <script type="module">
+
+      import * as maplibregl from 'https://cdn.jsdelivr.net/npm/maplibre-gl@6.15.0/dist/maplibre-gl.mjs';
+
+      const map = new maplibregl.Map({
+        container: 'mapid',                  // the id of the div above
+        center: [-123.14, 49.255],    // [longitude, latitude]
+        zoom: 11,
+        style: 'https://tiles.openfreemap.org/styles/bright'  
+      });
+      window.map = map;
+
+      // The raw URL of the storefronts geojson file on GitHub.
+      const url = 'https://raw.githubusercontent.com/UBC-GEOS472-Fall2026/h4rdworking-explab2/refs/heads/main/storefronts-foodbev%2Bconvenience.geojson';
+      
+      const shopPaint = {
+        'circle-radius': ['interpolate', ['linear'], ['zoom'], 13, 6, 17, 6],
+
+        'circle-color': ['match', ['get', 'general_business_category'],
+                         'Convenience Goods',  '#FFFF00',
+                         'Food & Beverage', '#0ADD08',
+                         '#999999'],
+        'circle-opacity': 1
+
+/*        'circle-stroke-color': ['match', ['get', 'general_business_category'],
+                         'Convenience Goods', '#0ADD08', // dark green
+                         'Food & Beverage', '#CC5500', //burnt orange
+                         '#999999'],
+                         */
+      };
+
+      function onEachShop(e) {
+        const shop = e.features[0].properties;
+        
+        if (shop.business_name) {
+          const popup = new maplibregl.Popup();
+          popup.setLngLat(e.lngLat);
+          popup.setText(shop.business_name);
+          popup.addTo(map);
+        }
+      }
+      function addShops(){
+        if (map.getSource('shop')){
+          return;
+        }
+        //add shops to this function
+        map.addSource('shop', {
+          type: 'geojson',
+          data: url,
+          attribution: 'Shops etc, data'
+        });
+        map.addLayer({
+          id: 'shop-circles',
+          type: 'circle',
+          source: 'shop',
+          paint: shopPaint
+        });
+      }
+      map.on('click', 'shop-circles', onEachShop);
+
+      function showAllShops(){
+        addShops();
+        map.setFilter('shop-circles', null);
+        map.setPaintProperty('shop-circles', 'circle-color', shopMarkerPaint['circle-color']);
+        map.setPaintProperty('shop-circles', 'circle-opacity', fieldMarketPaint['circle-opacity']);           
+      }
+       //highlightshops function
+      function highlightShops(){
+        addShops();
+        const textEntry =
+        document.getElementById('highlightShopsTextEntry');
+        const SHOP_NAME_Highlight = textEntry.value;
+        if (SHOP_NAME_Highlight === ''){
+          showAllShops();
+          return;
+        }
+        map.setFilter('shop-circles', ['in', SHOP_NAME_Highlight, ['get', 'business_name']]);
+        
+        map.setPaintProperty('shop-circles', 'fill-color', '#ff7f00');
+        map.setPaintProperty('shop-circles', 'fill-opacity', 0.9);
+      }
+
+      //addding belowwww //repeating load function!! is that ok??
+        
+    const url2 = 'https://raw.githubusercontent.com/UBC-GEOS472-Fall2026/h4rdworking-explab2/main/translink-vancouver-clip.geojson ';
+     
+    map.on('load', function () {
+
+      map.addSource('transit', {
+        type: 'geojson',
+        data: url2,
+        attribution: 'Transit Lines: Translink data'
+      });
+      map.addLayer({
+        id: 'transit-lines',
+        type: 'line',
+        source: 'transit'
+      });
+    
+        const showAllButton = document.getElementById('showAllShopsButton');
+        showAllButton.addEventListener('click', showAllShops);
+
+        const highlightButton = document.getElementById('highlightShopsButton');
+        highlightButton.addEventListener('click', highlightShops);  
+      });
+      
+//all code before this ^ starts map as blank and show all shops button works correctly 
+      map.on('load', async function () { //what is async?
+        
+        const response = await fetch(url);
+
+        const shop = await response.json();
+        console.log(shop.features.length + ' shop');
+        
+        map.addSource('shop', {
+          type: 'geojson',
+          data: url,
+          attribution: 'Storefronts: Vancouver Open Data Portal'
+        });
+          map.addLayer({
+          id: 'shop-circles',
+          type: 'circle', //circle or fill?
+          source: 'shop',
+          paint: shopPaint
+        });
+          map.addLayer({ //border of circles DOESN'T WORK!!!
+          id: 'shop-circles-line',
+          type: 'line', //circle or fill?
+          source: 'shop',
+          paint: { 'line-color': '#2166ac',
+                   'line-width': 1.5 }
+        });
+        
+          map.on('click', 'shop-circles', onEachShop);
+          
+        const point = turf.point([-123.14, 49.255]); //same as above
+
+        console.log(point);
+          
+        map.addSource('point', {
+          type: 'geojson',
+          data: point
+        });
+        map.addLayer({
+          id: 'point-circle',
+          type: 'circle',
+          source: 'point',
+          paint: { 'circle-radius': 8,
+                   'circle-color': '#2166ac' }
+        });
+        
+        const buffered = turf.buffer(point, 100, { units: 'meters' });
+        map.addSource('buffered', {
+          type: 'geojson',
+          data: buffered
+        });
+        map.addLayer({
+          id: 'buffered-fill',
+          type: 'fill',
+          source: 'buffered',
+          paint: { 'fill-color': '#2166ac',
+                   'fill-opacity': 0.2 }
+        });
+        
+        const within = turf.pointsWithinPolygon(shop, buffered);
+        console.log(within.features.length + ' shops inside the 100 m buffer');
+        map.addSource('within', {
+          type: 'geojson',
+          data: within
+        });
+        map.addLayer({
+          id: 'within-circles',
+          type: 'circle',
+          source: 'within',
+          paint: { 'circle-radius': 6,
+                   'circle-color': '#e66101' }
+        });
+        //below, changed nearest.properties. to business_name, but it worked fine when it was taxa? why how
+        const nearest = turf.nearestPoint(point, shop, { units: 'meters' });
+        console.log('Nearest shop: ' + nearest.properties.business_name + ', ' + Math.round(nearest.properties.distanceToPoint) + ' m away');
+        map.addSource('nearest', {
+          type: 'geojson',
+          data: nearest
+        });
+        map.addLayer({
+          id: 'nearest-circle',
+          type: 'circle',
+          source: 'nearest',
+          paint: { 'circle-radius': 9,
+                   'circle-color': '#FF0000' }
+        });
+         map.on('click', function (e) {
+          const clicked = turf.point([e.lngLat.lng, e.lngLat.lat]);
+
+          const distanceEntry = document.getElementById('distanceInput');
+          // Number() turns that text into a number.
+          const distance = Number(distanceEntry.value);
+          // For a point, turf.buffer() needs a distance above 0. Number() turns an empty box into 0.
+          if (distance <= 0) {
+            console.log('Type a distance above 0 metres, then click the map again.');
+            return;
+          }
+          const clickedBuffer = turf.buffer(clicked, distance, { units: 'meters' });
+          // setData() gives a source new data. MapLibre then draws the source's layers again.
+          map.getSource('point').setData(clicked);
+          map.getSource('buffered').setData(clickedBuffer);
+
+          const clickedWithin = turf.pointsWithinPolygon(shop, clickedBuffer);
+          console.log(clickedWithin.features.length + ' shops inside the ' + distance + ' m buffer');
+          map.getSource('within').setData(clickedWithin);
+
+          const clickedNearest = turf.nearestPoint(clicked, shop, { units: 'meters' });
+          console.log('Nearest shop: ' + clickedNearest.properties.business_name + ', ' + clickedNearest.properties.general_business_category + ', ' + Math.round(clickedNearest.properties.distanceToPoint) + ' m away');
+          map.getSource('nearest').setData(clickedNearest);
+        });
+        
+      });
+          
+    </script>
+  </body>
+</html>
