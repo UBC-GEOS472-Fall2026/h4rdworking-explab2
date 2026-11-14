@@ -11,17 +11,26 @@
       href="https://cdn.jsdelivr.net/npm/maplibre-gl@6.15.0/dist/maplibre-gl.css"
     />
     <!-- Load Turf's code (JavaScript). After this line, the code on the page can use the name turf. -->
-    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7.4.0/turf.min.js"></script>
-
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7.4.0/turf.min.js">    
+    </script>
+    
       <style> 
   body { margin: 0; } 
-  #map { position: absolute; inset: 0; } 
     
   #legend { position: absolute; right: 10px; bottom: 30px;
-          width: 220px; padding: 8px; background: white; }
+          width: 220px; padding: 8px; background: white; border-radius: 4px; }
 
-  #type-storefront { height: 14px; background: linear-gradient(to right,
-          rgba(120, 76, 255, 0), #eee8ff 8%, #784cff); }
+  #legend-container { position: absolute; right: 20px; bottom: 50px;
+                      width: 220px; padding: 8px; background: white; }
+  .swatch {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      margin-right: 8px;
+      border: 1px solid #ccc;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
   
   #legend p { font-size: 12px; margin: 6px 0 0; }
 
@@ -32,29 +41,35 @@
   </style>
 </head>
 <body>
-  <div id="map"></div>
 
     <div id="legend"> 
     <div class="layer-section">
-      Type of Storefront, 2026??? 
-      
-      <div id="type-storefront"></div> 
-      <span>0</span>
-      <span style="float: right">15%</span>
+      Type of Storefront, 2026 
     </div>
 
-      
+      <div class="legend-container">
+  <div class="legend-item">
+    <!-- INPUT FIRST COLOR IN THE STYLE ATTRIBUTE BELOW -->
+    <span class="swatch" style="background-color: #ffff00;"></span>
+    <span>Convenience Goods</span>
+  </div>
+  <div class="legend-item">
+    <!-- INPUT SECOND COLOR IN THE STYLE ATTRIBUTE BELOW -->
+    <span class="swatch" style="background-color: #0add08;"></span>
+    <span>Food & Beverage</span>
+  </div>
+</div>
 
-  <p>Related Layers: Translink Lines, 2026??? </p>
+  <p>Related Layers: Translink Lines, 2026 </p>
     
   </div>
   </head>
   
   <body>
     <!-- The web map will go in this div element. -->
-    <div id="mapid" style="width: 1200px; height: 550px;"></div>
+    <div id="mapid" style="width: 1200px; height: 350px; margin:0 auto"></div>
 
-      <div id="controls" style="margin: 25px;">
+      <div id="controls" style="margin: 15px;">
       <button id="showAllShopsButton">Show All Shops</button>
 
       <span style="display: inline-block; width: 150px;"></span>
@@ -63,7 +78,12 @@
     </div>
 
     <span style="display: inline-block; width: 150px;"></span>
-    <p>  ......  Type a distance in metres, then click the map: <input id="distanceInput" type="number" value="500"></p>
+    <p>   - - - > Type a distance in metres, then click the map: <input id="distanceInput" type="number" value="500"></p>
+
+<p>
+  -  -  -  >  Shops Within Buffer:
+  <span id="bufferResults"> Click the map to calculate </span>
+</p>
     
     <script type="module">
 
@@ -82,13 +102,11 @@
       
       const shopPaint = {
         'circle-radius': ['interpolate', ['linear'], ['zoom'], 13, 6, 17, 6],
-
         'circle-color': ['match', ['get', 'general_business_category'],
                          'Convenience Goods',  '#FFFF00',
                          'Food & Beverage', '#0ADD08',
                          '#999999'],
         'circle-opacity': 1,
-        
         'circle-stroke-color': ['match', ['get', 'general_business_category'],
                          'Convenience Goods', '#CC5500', // mustard
                          'Food & Beverage', '#006400', // dark green
@@ -98,7 +116,6 @@
 
       function onEachShop(e) {
         const shop = e.features[0].properties;
-        
         if (shop.business_name) {
           const popup = new maplibregl.Popup();
           popup.setLngLat(e.lngLat);
@@ -110,49 +127,84 @@
         if (map.getSource('shop')){
           return;
         }
+        
         //add shops to this function
         map.addSource('shop', {
           type: 'geojson',
           data: url,
-          attribution: 'Shops etc, data'
         });
+        
         map.addLayer({
           id: 'shop-circles',
           type: 'circle',
           source: 'shop',
           paint: shopPaint
         });
-      }
+        
       map.on('click', 'shop-circles', onEachShop);
+      }
 
       function showAllShops(){
         addShops();
-        map.setFilter('shop-circles', null);
-        map.setPaintProperty('shop-circles', 'circle-color', shopMarkerPaint['circle-color']);
-        map.setPaintProperty('shop-circles', 'circle-opacity', fieldMarketPaint['circle-opacity']);           
+
+          map.setPaintProperty(
+    'shop-circles',
+    'circle-color',
+    shopPaint['circle-color']
+  );
+
+  map.setPaintProperty(
+    'shop-circles',
+    'circle-opacity',
+    1
+  );
+        
+    map.setFilter('shop-circles', null);
+
+
+/*        
+          map.setPaintProperty(
+    'shop-circles',
+    'circle-color',
+    shopPaint['circle-color']
+  );
+*/
       }
+      
        //highlightshops function
       function highlightShops(){
         addShops();
+        
         const textEntry =
         document.getElementById('highlightShopsTextEntry');
-        const SHOP_NAME_Highlight = textEntry.value;
+        
+        const SHOP_NAME_Highlight = textEntry.value.trim().toLowerCase(); //trim??
+        
         if (SHOP_NAME_Highlight === ''){
           showAllShops();
           return;
         }
-        map.setFilter('shop-circles', ['in', SHOP_NAME_Highlight, ['get', 'business_name']]);
         
-        map.setPaintProperty('shop-circles', 'fill-color', '#ff7f00');
-        map.setPaintProperty('shop-circles', 'fill-opacity', 0.9);
+        map.setFilter('shop-circles', ['in', SHOP_NAME_Highlight, ['downcase', ['get', 'business_name']]]);
+        //changed fill to circle below. 2 lines
+        map.setPaintProperty('shop-circles', 'circle-color', '#ff7f00');//
+        map.setPaintProperty('shop-circles', 'circle-opacity', 0.9);//
       }
 
-      //addding belowwww //repeating load function!! is that ok??
-        
     const url2 = 'https://raw.githubusercontent.com/UBC-GEOS472-Fall2026/h4rdworking-explab2/main/translink-vancouver-clip.geojson ';
-     
-    map.on('load', function () {
+      
+//all code before this ^ starts map as blank and show all shops button works correctly 
 
+
+      
+      map.on('load', async function () { //what is async?
+        
+        const response = await fetch(url);
+        const shop = await response.json();
+        
+        console.log(shop.features.length + ' shop');
+//chat lines 202-207
+     
       map.addSource('transit', {
         type: 'geojson',
         data: url2,
@@ -163,43 +215,17 @@
         type: 'line',
         source: 'transit'
       });
-    
+
+
+        //chat does diff
         const showAllButton = document.getElementById('showAllShopsButton');
         showAllButton.addEventListener('click', showAllShops);
 
         const highlightButton = document.getElementById('highlightShopsButton');
         highlightButton.addEventListener('click', highlightShops);  
-      });
-      
-//all code before this ^ starts map as blank and show all shops button works correctly 
-      map.on('load', async function () { //what is async?
-        
-        const response = await fetch(url);
 
-        const shop = await response.json();
-        console.log(shop.features.length + ' shop');
-        
-        map.addSource('shop', {
-          type: 'geojson',
-          data: url,
-          attribution: 'Storefronts: Vancouver Open Data Portal'
-        });
-          map.addLayer({
-          id: 'shop-circles',
-          type: 'circle', //circle or fill?
-          source: 'shop',
-          paint: shopPaint
-        });
-          map.addLayer({ //border of circles DOESN'T WORK!!!
-          id: 'shop-circles-line',
-          type: 'line', //circle or fill?
-          source: 'shop',
-          paint: { 'line-color': '#2166ac',
-                   'line-width': 1.5 }
-        });
-        
-          map.on('click', 'shop-circles', onEachShop);
-          
+
+      
         const point = turf.point([-123.14, 49.255]); //same as above
 
         console.log(point);
@@ -212,8 +238,12 @@
           id: 'point-circle',
           type: 'circle',
           source: 'point',
+          layout: {
+            visibility: 'none'
+          },
           paint: { 'circle-radius': 8,
                    'circle-color': '#2166ac' }
+          
         });
         
         const buffered = turf.buffer(point, 100, { units: 'meters' });
@@ -225,11 +255,15 @@
           id: 'buffered-fill',
           type: 'fill',
           source: 'buffered',
+          layout: {
+            visibility: 'none'
+          },
           paint: { 'fill-color': '#2166ac',
                    'fill-opacity': 0.2 }
         });
         
         const within = turf.pointsWithinPolygon(shop, buffered);
+      
         console.log(within.features.length + ' shops inside the 100 m buffer');
         map.addSource('within', {
           type: 'geojson',
@@ -239,10 +273,13 @@
           id: 'within-circles',
           type: 'circle',
           source: 'within',
+          layout: {
+            visibility: 'none'
+          },
           paint: { 'circle-radius': 6,
                    'circle-color': '#e66101' }
         });
-        //below, changed nearest.properties. to business_name, but it worked fine when it was taxa? why how
+
         const nearest = turf.nearestPoint(point, shop, { units: 'meters' });
         console.log('Nearest shop: ' + nearest.properties.business_name + ', ' + Math.round(nearest.properties.distanceToPoint) + ' m away');
         map.addSource('nearest', {
@@ -253,10 +290,15 @@
           id: 'nearest-circle',
           type: 'circle',
           source: 'nearest',
+          layout: {
+            visibility: 'none'
+          },
           paint: { 'circle-radius': 9,
                    'circle-color': '#FF0000' }
         });
+      
          map.on('click', function (e) {
+           
           const clicked = turf.point([e.lngLat.lng, e.lngLat.lat]);
 
           const distanceEntry = document.getElementById('distanceInput');
@@ -264,21 +306,37 @@
           const distance = Number(distanceEntry.value);
           // For a point, turf.buffer() needs a distance above 0. Number() turns an empty box into 0.
           if (distance <= 0) {
-            console.log('Type a distance above 0 metres, then click the map again.');
+            console.log('Type a distance above 0 metres');
             return;
           }
+           
           const clickedBuffer = turf.buffer(clicked, distance, { units: 'meters' });
           // setData() gives a source new data. MapLibre then draws the source's layers again.
           map.getSource('point').setData(clicked);
           map.getSource('buffered').setData(clickedBuffer);
 
           const clickedWithin = turf.pointsWithinPolygon(shop, clickedBuffer);
+           /*
           console.log(clickedWithin.features.length + ' shops inside the ' + distance + ' m buffer');
+*/
+           document.getElementById('bufferResults').textContent = 
+             clickedWithin.features.length + 
+             ' shops within ' + distance + ' metres';
+           
+           
           map.getSource('within').setData(clickedWithin);
 
           const clickedNearest = turf.nearestPoint(clicked, shop, { units: 'meters' });
+           
           console.log('Nearest shop: ' + clickedNearest.properties.business_name + ', ' + clickedNearest.properties.general_business_category + ', ' + Math.round(clickedNearest.properties.distanceToPoint) + ' m away');
-          map.getSource('nearest').setData(clickedNearest);
+          
+           map.getSource('nearest').setData(clickedNearest);
+
+           map.setLayoutProperty('point-circle', 'visibility', 'visible');
+  map.setLayoutProperty('buffered-fill', 'visibility', 'visible');
+  map.setLayoutProperty('within-circles', 'visibility', 'visible');
+  map.setLayoutProperty('nearest-circle', 'visibility', 'visible');
+
         });
         
       });
