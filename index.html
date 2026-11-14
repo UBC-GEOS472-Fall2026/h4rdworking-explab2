@@ -5,12 +5,12 @@
     <meta charset="utf-8" />
     <title>Exploratory Lab 2: Food Near Me</title>
 
-    <!-- Load MapLibre's stylesheet (CSS). Its code (JavaScript) is loaded below, in the script. -->
+    <!-- Load MapLibre's stylesheet (CSS)-->
     <link
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/maplibre-gl@6.15.0/dist/maplibre-gl.css"
     />
-    <!-- Load Turf's code (JavaScript). After this line, the code on the page can use the name turf. -->
+    <!-- Load Turf's code (JavaScript)-->
     <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7.4.0/turf.min.js">    
     </script>
     
@@ -22,7 +22,7 @@
 
   #legend-container { position: absolute; right: 20px; bottom: 50px;
                       width: 220px; padding: 8px; background: white; }
-  .swatch {
+  .swatch { 
       display: inline-block;
       width: 16px;
       height: 16px;
@@ -49,24 +49,24 @@
 
       <div class="legend-container">
   <div class="legend-item">
-    <!-- INPUT FIRST COLOR IN THE STYLE ATTRIBUTE BELOW -->
+    <!-- convenience store = FIRST COLOR -->
     <span class="swatch" style="background-color: #ffff00;"></span>
     <span>Convenience Goods</span>
   </div>
   <div class="legend-item">
-    <!-- INPUT SECOND COLOR IN THE STYLE ATTRIBUTE BELOW -->
+    <!-- food bev stores = SECOND COLOR -->
     <span class="swatch" style="background-color: #0add08;"></span>
     <span>Food & Beverage</span>
   </div>
 </div>
 
-  <p>Related Layers: Translink Lines, 2026 </p>
+  <p>Related Layers: Translink Lines, 2026 </p> 
     
   </div>
   </head>
   
   <body>
-    <!-- The web map will go in this div element. -->
+    <!-- The web map is in this div element. -->
     <div id="mapid" style="width: 1200px; height: 550px; margin:0 auto"></div>
 
       <div id="controls" style="margin: 15px;">
@@ -97,15 +97,15 @@
       const map = new maplibregl.Map({
         container: 'mapid',                  // the id of the div above
         center: [-123.14, 49.255],    // [longitude, latitude]
-        zoom: 11,
-        style: 'https://tiles.openfreemap.org/styles/bright'  
+        zoom: 11, //zoomed out enough to see whole city 
+        style: 'https://tiles.openfreemap.org/styles/bright' //bright style   
       });
       window.map = map;
 
       // The raw URL of the storefronts geojson file on GitHub.
       const url = 'https://raw.githubusercontent.com/UBC-GEOS472-Fall2026/h4rdworking-explab2/refs/heads/main/storefronts-foodbev%2Bconvenience.geojson';
       
-      const shopPaint = {
+      const shopPaint = { //similar format to ubc trees example 
         'circle-radius': ['interpolate', ['linear'], ['zoom'], 13, 6, 17, 6],
         'circle-color': ['match', ['get', 'general_business_category'],
                          'Convenience Goods',  '#FFFF00',
@@ -113,13 +113,14 @@
                          '#999999'],
         'circle-opacity': 1,
         'circle-stroke-color': ['match', ['get', 'general_business_category'],
+          //added stroke around circles for visibility ease, to distinguish where they is a cluster of points
                          'Convenience Goods', '#CC5500', // mustard
                          'Food & Beverage', '#006400', // dark green
                          '#999999'],
         'circle-stroke-width': 1 
       };
 
-      function onEachShop(e) {
+      function onEachShop(e) { // shows user the shop name when clicked on
         const shop = e.features[0].properties;
         if (shop.business_name) {
           const popup = new maplibregl.Popup();
@@ -147,10 +148,10 @@
         });
         
       map.on('click', 'shop-circles', onEachShop);
-      }
+      } //end of on each shop function
 
       function showAllShops(){
-        addShops();
+        addShops(); //button controls when shops display 
 
           map.setPaintProperty(
     'shop-circles',
@@ -166,24 +167,17 @@
         
     map.setFilter('shop-circles', null);
 
-
-/*        
-          map.setPaintProperty(
-    'shop-circles',
-    'circle-color',
-    shopPaint['circle-color']
-  );
-*/
       }
       
-       //highlightshops function
+       //highlight shops function
       function highlightShops(){
         addShops();
         
         const textEntry =
         document.getElementById('highlightShopsTextEntry');
         
-        const SHOP_NAME_Highlight = textEntry.value.trim().toLowerCase(); //trim??
+        const SHOP_NAME_Highlight = textEntry.value.trim().toLowerCase(); //added trim to lowercase 
+        //allows user ease, not as strict as accurate text 
         
         if (SHOP_NAME_Highlight === ''){
           showAllShops();
@@ -195,20 +189,13 @@
         map.setPaintProperty('shop-circles', 'circle-color', '#ff7f00');//
         map.setPaintProperty('shop-circles', 'circle-opacity', 0.9);//
       }
-
+//raw link doesn't work when github repo is private!! must be public
     const url2 = 'https://raw.githubusercontent.com/UBC-GEOS472-Fall2026/h4rdworking-explab2/main/translink-vancouver-clip.geojson ';
-      
-//all code before this ^ starts map as blank and show all shops button works correctly 
-
 
       
-      map.on('load', async function () { //what is async?
+      map.on('load', async function () { // second load function. this one is async
         
         const response = await fetch(url);
-
-
-
-
 
 console.log('Fetch status:', response.status);
 
@@ -216,14 +203,8 @@ const shop = await response.json();
 
 console.log('Shops loaded:', shop.features.length);
 
-
-
-
-        
-  //      const shop = await response.json();
-        
+       
         console.log(shop.features.length + ' shop');
-//chat lines 202-207
      
       map.addSource('transit', {
         type: 'geojson',
@@ -237,16 +218,14 @@ console.log('Shops loaded:', shop.features.length);
       });
 
 
-        //chat does diff
+
         const showAllButton = document.getElementById('showAllShopsButton');
         showAllButton.addEventListener('click', showAllShops);
 
         const highlightButton = document.getElementById('highlightShopsButton');
         highlightButton.addEventListener('click', highlightShops);  
 
-
-      
-        const point = turf.point([-123.14, 49.255]); //same as above
+        const point = turf.point([-123.14, 49.255]); //same point as above
 
         console.log(point);
           
@@ -356,22 +335,6 @@ document.getElementById('nearestShopResults').textContent = 'CLICK DETECTED!';
           const clickedNearest = turf.nearestPoint(clicked, shop, { units: 'meters' });
 
 
-          /*
-          console.log('Nearest shop: ' + clickedNearest.properties.business_name + ', ' + clickedNearest.properties.general_business_category + ', ' + Math.round(clickedNearest.properties.distanceToPoint) + ' metres away');
-          
-
-           
-           document.getElementById('nearestShopResults').textContent =
-             clickedNearest.properties.business_name + 
-             ', ' +
-             clickedNearest.properties.general_business_category + ' ,' +
-             Math.round(clickedNearest.properties.distanceToPoint) + 'metres away'
-           //  );
-
-
-           */
-
-
 
 document.getElementById('nearestShopResults').textContent =
   clickedNearest.properties.business_name +
@@ -380,8 +343,6 @@ document.getElementById('nearestShopResults').textContent =
   ') — ' +
   Math.round(clickedNearest.properties.distanceToPoint) +
   ' metres away';
-
-
 
            
            map.getSource('nearest').setData(clickedNearest);
