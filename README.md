@@ -2,7 +2,9 @@
 interactive exploratory lab 2
 
 Beelow is a screenshot of a zoomed in section of East Vancouver, which has a greater number of Convenience Stores than Food & Beverage stores. 
+
 <img width="774" height="328" alt="Screenshot 2026-11-13 at 18 50 59" src="https://github.com/user-attachments/assets/0b60dce9-4f84-473e-a1ed-0d014049dbf6" />
+
 I find this part of the map particularly interesting because it shows a higher concentration of Convenience Stores than nearly anywhere else on the map. This location is East Hastings, notable for being a site where many lower income residents and people without homes frequent. This makes me wonder if convenience stores are more abundant here because of their generally lower-priced food, however they are often unhealthy options. 
 
 Collaborations: 
